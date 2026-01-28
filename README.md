@@ -16,25 +16,11 @@ This skill automates the process of running multiple code quality and security t
 
 ## Installation
 
-### Option 1: Copy to Your Project
-
-Copy the skill files to your project's `.claude/skills/` directory:
+From your Rails project directory, run:
 
 ```bash
-mkdir -p .claude/skills/tech-debt-audit
-cp SKILL.md .claude/skills/tech-debt-audit/
-cp report-template.md .claude/skills/tech-debt-audit/
-```
-
-### Option 2: Clone and Symlink
-
-Clone this repository and symlink to your project:
-
-```bash
-git clone https://github.com/fastruby/tech-debt-skill.git
-cd your-rails-project
 mkdir -p .claude/skills
-ln -s /path/to/tech-debt-skill .claude/skills/tech-debt-audit
+git clone https://github.com/fastruby/tech-debt-skill.git .claude/skills/tech-debt-audit
 ```
 
 ## Usage
