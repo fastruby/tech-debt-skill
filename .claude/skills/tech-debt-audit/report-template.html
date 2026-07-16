@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech Debt Audit — {{PROJECT_NAME}}</title>
+<style>
+  :root {
+    --brand: #d5122b;
+    --brand-dark: #a50e21;
+    --ink: #1f2933;
+    --muted: #616e7c;
+    --line: #e4e7eb;
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --pass: #2f9e44;
+    --warn: #f08c00;
+    --fail: #e03131;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  header.masthead {
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    color: #fff;
+    padding: 40px 32px;
+  }
+  header.masthead h1 { margin: 0 0 6px; font-size: 28px; }
+  header.masthead .meta { opacity: .9; font-size: 14px; }
+  header.masthead .meta span { margin-right: 18px; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px; }
+  section { margin-bottom: 40px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+  }
+  h2 {
+    font-size: 22px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  h2 .num { color: var(--brand); font-weight: 700; margin-right: 8px; }
+  h3 { font-size: 16px; margin: 22px 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { background: #fafbfc; font-weight: 600; color: var(--muted); }
+  tr:hover td { background: #fafbfc; }
+  code { background: #f1f3f5; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  pre { background: #1f2933; color: #e4e7eb; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+  .badge.pass { background: var(--pass); }
+  .badge.warn { background: var(--warn); }
+  .badge.fail { background: var(--fail); }
+  .score-grid { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+  .score-hero {
+    flex: 0 0 180px; text-align: center; background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; padding: 20px; box-shadow: var(--shadow);
+  }
+  .score-hero .big { font-size: 52px; font-weight: 800; line-height: 1; color: var(--brand); }
+  .score-hero .lbl { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .score-table { flex: 1 1 420px; }
+  .bar { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; min-width: 90px; }
+  .bar > span { display: block; height: 100%; background: var(--brand); }
+  .shot { margin: 16px 0; }
+  .shot img { max-width: 100%; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+  .shot .cap { font-size: 12.5px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .recs { counter-reset: rec; }
+  .rec {
+    display: flex; gap: 16px; align-items: flex-start; padding: 18px;
+    border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; background: var(--card);
+  }
+  .rec .rank {
+    flex: 0 0 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff;
+    font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center;
+  }
+  .rec h4 { margin: 0 0 6px; font-size: 16px; }
+  .rec p { margin: 0; color: var(--muted); font-size: 14px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+  .toc a { font-size: 13px; text-decoration: none; color: var(--brand); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; background: #fff; }
+  .toc a:hover { background: var(--brand); color: #fff; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px; border-top: 1px solid var(--line); }
+  footer a { color: var(--brand); }
+  .muted { color: var(--muted); }
+  .empty { color: var(--pass); font-style: italic; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <h1>Tech Debt Audit Report</h1>
+  <div class="meta">
+    <span><strong>Project:</strong> {{PROJECT_NAME}}</span>
+    <span><strong>Date:</strong> {{DATE}}</span>
+    <span><strong>Directory:</strong> {{DIRECTORY}}</span>
+    <span><strong>Auditor:</strong> Claude Code</span>
+  </div>
+</header>
+
+<main>
+  <!-- ============ EXECUTIVE SUMMARY ============ -->
+  <section id="summary">
+    <div class="card">
+      <h2><span class="num">01</span>Executive Summary</h2>
+      <p>{{EXECUTIVE_SUMMARY}}</p>
+      <div class="score-grid">
+        <div class="score-hero">
+          <div class="big">{{TOTAL_SCORE}}</div>
+          <div class="lbl">Health Score / 100</div>
+        </div>
+        <div class="score-table">
+          <table>
+            <thead><tr><th>Category</th><th>Score</th><th></th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Security</td><td>{{SECURITY_SCORE}}/20</td><td><div class="bar"><span style="width:{{SECURITY_PCT}}%"></span></div></td><td>{{SECURITY_BADGE}}</td></tr>
+              <tr><td>Dependencies</td><td>{{DEPS_SCORE}}/20</td><td><div class="bar"><span style="width:{{DEPS_PCT}}%"></span></div></td><td>{{DEPS_BADGE}}</td></tr>
+              <tr><td>Complexity</td><td>{{COMPLEXITY_SCORE}}/20</td><td><div class="bar"><span style="width:{{COMPLEXITY_PCT}}%"></span></div></td><td>{{COMPLEXITY_BADGE}}</td></tr>
+              <tr><td>Coverage</td><td>{{COVERAGE_SCORE}}/20</td><td><div class="bar"><span style="width:{{COVERAGE_PCT}}%"></span></div></td><td>{{COVERAGE_BADGE}}</td></tr>
+              <tr><td>Maintainability</td><td>{{MAINTAIN_SCORE}}/20</td><td><div class="bar"><span style="width:{{MAINTAIN_PCT}}%"></span></div></td><td>{{MAINTAIN_BADGE}}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <nav class="toc">
+        <a href="#security">Security</a>
+        <a href="#freshness">Dependencies</a>
+        <a href="#coverage">Coverage</a>
+        <a href="#complexity">Complexity</a>
+        <a href="#skunk">Skunk</a>
+        <a href="#framework">Framework</a>
+        <a href="#recommendations">Recommendations</a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ============ SECURITY ============ -->
+  <section id="security">
+    <div class="card">
+      <h2><span class="num">02</span>Security</h2>
+      <h3>Ruby Dependencies — bundler-audit</h3>
+      {{BUNDLER_AUDIT_CONTENT}}
+      <h3>Static Analysis — Brakeman</h3>
+      {{BRAKEMAN_CONTENT}}
+      <h3>Memory Leaks — bundler-leak</h3>
+      {{BUNDLER_LEAK_CONTENT}}
+      <h3>Filesystem & Secrets — Trivy</h3>
+      {{TRIVY_CONTENT}}
+      <h3>JavaScript Dependencies — npm/yarn audit</h3>
+      {{JS_AUDIT_CONTENT}}
+    </div>
+  </section>
+
+  <!-- ============ DEPENDENCY FRESHNESS ============ -->
+  <section id="freshness">
+    <div class="card">
+      <h2><span class="num">03</span>Dependency Freshness</h2>
+      <h3>next_rails — Outdated Report</h3>
+      {{OUTDATED_CONTENT}}
+      <h3>libyear-bundler — Freshness Metric</h3>
+      {{LIBYEAR_CONTENT}}
+    </div>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section id="coverage">
+    <div class="card">
+      <h2><span class="num">04</span>Test Coverage</h2>
+      {{COVERAGE_CONTENT}}
+    </div>
+  </section>
+
+  <!-- ============ COMPLEXITY ============ -->
+  <section id="complexity">
+    <div class="card">
+      <h2><span class="num">05</span>Code Complexity — RubyCritic</h2>
+      {{RUBYCRITIC_CONTENT}}
+      <div class="shot">
+        <img src="{{RUBYCRITIC_OVERVIEW_IMG}}" alt="RubyCritic overview: churn vs complexity">
+        <div class="cap">RubyCritic overview — churn vs. complexity scatter plot</div>
+      </div>
+      {{RUBYCRITIC_EXTRA_SHOTS}}
+    </div>
+  </section>
+
+  <!-- ============ SKUNK ============ -->
+  <section id="skunk">
+    <div class="card">
+      <h2><span class="num">06</span>Skunk Score</h2>
+      {{SKUNK_CONTENT}}
+    </div>
+  </section>
+
+  <!-- ============ FRAMEWORK HEALTH ============ -->
+  <section id="framework">
+    <div class="card">
+      <h2><span class="num">07</span>Framework Health & Environment</h2>
+      {{FRAMEWORK_CONTENT}}
+    </div>
+  </section>
+
+  <!-- ============ TOP 3 RECOMMENDATIONS ============ -->
+  <section id="recommendations">
+    <div class="card">
+      <h2><span class="num">08</span>Top 3 Recommended Actions</h2>
+      <p class="muted">The highest-impact actions to address high-priority issues, based on every report above.</p>
+      <div class="recs">
+        <div class="rec"><div class="rank">1</div><div><h4>{{REC1_TITLE}}</h4><p>{{REC1_BODY}}</p></div></div>
+        <div class="rec"><div class="rank">2</div><div><h4>{{REC2_TITLE}}</h4><p>{{REC2_BODY}}</p></div></div>
+        <div class="rec"><div class="rank">3</div><div><h4>{{REC3_TITLE}}</h4><p>{{REC3_BODY}}</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APPENDIX ============ -->
+  <section id="appendix">
+    <div class="card">
+      <h2><span class="num">09</span>Appendix — Tools Used</h2>
+      {{TOOLS_TABLE}}
+      {{APPENDIX_NOTES}}
+    </div>
+  </section>
+</main>
+
+<footer>
+  Report generated by the <a href="https://github.com/fastruby/tech-debt-skill">Claude Code Tech Debt Audit Skill</a>
+  · <a href="https://www.fastruby.io">FastRuby.io</a>
+</footer>
+</body>
+</html>

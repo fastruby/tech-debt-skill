@@ -4,15 +4,34 @@ A [Claude Code](https://claude.ai/claude-code) skill that generates comprehensiv
 
 ## What It Does
 
-This skill automates the process of running multiple code quality and security tools, then compiles the results into a single, actionable report. It analyzes:
+This skill automates the process of running multiple code quality and security tools, then compiles the results into a **single, self-contained HTML report**. It analyzes:
 
-- **Security Vulnerabilities**: bundler-audit, Brakeman, bundler-leak
+- **Security Vulnerabilities**: bundler-audit, Brakeman, bundler-leak, Trivy
 - **Dependency Freshness**: next_rails, libyear-bundler
 - **Code Coverage**: SimpleCov
 - **Code Complexity**: RubyCritic
 - **Combined Metrics**: Skunk (churn + complexity + coverage)
 - **Framework Health**: Rails/Ruby versions, rake stats
 - **Development Environment**: CI setup, documentation
+
+### The HTML Report
+
+Every run produces one self-contained `index.html` that you can open in any browser or share as a single file. It includes:
+
+- An **executive summary** at the top, synthesized from every tool's output, with a 100-point health score
+- A **section for each tool** with the real numbers pulled from its output
+- **Visuals** — screenshots of the RubyCritic overview (churn vs. complexity) embedded as base64
+- The **top 3 recommended actions** at the end, targeting the highest-priority issues
+
+All output from a run is stored in one **timestamped directory** so you can keep baselines and compare over time:
+
+```
+tech-debt-audit-YYYYMMDD-HHMMSS/
+├── index.html          <- the single self-contained report
+├── raw/                <- raw text/JSON output from every tool
+├── rubycritic/         <- RubyCritic's generated HTML report
+└── screenshots/        <- PNG screenshots embedded into index.html
+```
 
 ## Installation
 
@@ -39,7 +58,7 @@ claude /tech-debt-audit ./path/to/project
 
 ## Sample Output
 
-The skill generates a comprehensive report with:
+The skill generates a single self-contained `index.html` (inside the timestamped directory) with:
 
 ### Health Score (100 points)
 
@@ -74,10 +93,15 @@ The skill will automatically install these tools if they're not present:
 - [bundler-audit](https://github.com/rubysec/bundler-audit) - Security vulnerability scanner
 - [brakeman](https://github.com/presidentbeef/brakeman) - Static security analyzer for Rails
 - [bundler-leak](https://github.com/rubymem/bundler-leak) - Memory leak detector
+- [trivy](https://github.com/aquasecurity/trivy) - Filesystem scanner for vulnerable dependencies, leaked secrets, and misconfigurations
 - [next_rails](https://github.com/fastruby/next_rails) - Outdated dependency reporter
 - [libyear-bundler](https://github.com/jaredbeck/libyear-bundler) - Dependency freshness calculator
 - [rubycritic](https://github.com/whitesmith/rubycritic) - Code quality reporter
 - [skunk](https://github.com/fastruby/skunk) - Technical debt calculator
+
+### Optional: Screenshots
+
+To embed the RubyCritic overview chart in the HTML report, the skill renders it with headless Chrome (`Google Chrome`, `google-chrome`, or `chromium`). If no browser is available, the skill skips the screenshots and notes it in the report; everything else still works.
 
 ## Important: Fresh Coverage Data
 
