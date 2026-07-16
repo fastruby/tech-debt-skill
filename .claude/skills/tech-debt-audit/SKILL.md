@@ -12,8 +12,6 @@ allowed-tools:
   - Bash(rake*)
   - Bash(rails-stats*)
   - Bash(rails_stats*)
-  - Bash(bundle-stats*)
-  - Bash(bundler-stats*)
   - Bash(grep*)
   - Bash(git*)
   - Bash(ls*)
