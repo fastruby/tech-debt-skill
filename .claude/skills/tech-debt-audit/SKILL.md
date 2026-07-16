@@ -245,29 +245,26 @@ complexity + low coverage + high churn.
 ## Step 7: Framework Health & Stats (Rails)
 
 Always use **rails_stats** instead of Rails' native `rake stats` — it reports richer metrics
-(polymorphic associations, schema stats, a cleaner code-to-test ratio). Pair it with
-**bundle-stats** (the `bundler-stats` gem) to measure dependency weight: how many transitive
-dependencies each top-level gem pulls in.
-
-**Do NOT run bundle-audit here.** bundler-audit already ran once in Step 2 (Security). Never
-run it a second time in this step — a single run is enough and re-running it is wasteful.
+(polymorphic associations, schema stats, a cleaner code-to-test ratio). It depends on
+**bundle-stats** (the `bundler-stats` gem) and emits its dependency-weight table too, so a
+single `rails-stats` call gives you BOTH application code metrics AND dependency metrics. Do
+NOT install or run `bundle-stats` separately — that would be redundant.
 
 ```bash
 bundle show rails > "$OUT/raw/rails-version.txt" 2>&1
 ruby -v > "$OUT/raw/ruby-version.txt" 2>&1
 
-# Codebase stats (app + tests)
+# Codebase stats AND dependency weight in one call (rails_stats bundles bundle-stats).
+# Capture ALL output — the dependency table prints first, the code-stats table second.
 gem install rails_stats --no-document
 rails-stats > "$OUT/raw/rails-stats.txt" 2>&1
 
-# Dependency weight (transitive dependency counts per gem)
-gem install bundler-stats --no-document
-bundle-stats > "$OUT/raw/bundle-stats.txt" 2>&1
-
 cloc --exclude-dir=node_modules,vendor,coverage,tmp,.git . > "$OUT/raw/cloc.txt" 2>&1
 ```
-Check Rails version support/EOL, code-to-test ratio, and the heaviest dependencies (gems with
-large transitive trees are prime candidates for removal or replacement).
+The `rails-stats` output has two tables: a dependency table (`Name | Total Deps | 1st Level
+Deps` — gems with large transitive trees are prime removal/replacement candidates) and the
+code-stats table (`Name | Files | Lines | LOC | Classes | Methods …`). Check Rails version
+support/EOL, code-to-test ratio, and the heaviest dependencies.
 
 ## Step 8: Runtime Observability
 
@@ -330,10 +327,11 @@ at `$OUT/index.html`.
    like `<p class="empty">No vulnerabilities found.</p>`. Never leave a `{{PLACEHOLDER}}` in
    the final file.
 
-   - `{{RAILS_STATS_CONTENT}}`: a table from `rails-stats.txt` (code LOC, test LOC,
-     code-to-test ratio, polymorphic associations, schema `create_table` count).
-   - `{{BUNDLE_STATS_CONTENT}}`: the heaviest gems from `bundle-stats.txt` (top gems by total
-     transitive dependency count), with a note on removal/replacement candidates.
+   - `{{RAILS_STATS_CONTENT}}`: the code-stats table from `rails-stats.txt` (code LOC, test
+     LOC, code-to-test ratio, polymorphic associations, schema `create_table` count).
+   - `{{BUNDLE_STATS_CONTENT}}`: the dependency table from the SAME `rails-stats.txt` (top gems
+     by total transitive dependency count), with a note on removal/replacement candidates.
+     There is no separate `bundle-stats.txt` — rails_stats emits this table itself.
    - `{{EXCEPTIONS_CONTENT}}`: if an exception-tracking gem was found (see Step 8), name it and
      mark it `<p class="empty">…</p>`. If none, use `<p class="flag">No exception tracking gem
      detected — the app cannot report production errors. This falls short of best practices;

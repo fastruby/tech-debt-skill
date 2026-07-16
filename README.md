@@ -12,7 +12,7 @@ This skill automates the process of running multiple code quality and security t
 - **Code Complexity**: RubyCritic
 - **Combined Metrics**: Skunk (churn + complexity + coverage)
 - **Runtime Observability**: exception tracking (Sentry, Honeybadger, Rollbar, etc.) and performance monitoring (New Relic, Scout, Skylight, rack-mini-profiler); flags their absence as a best-practice gap
-- **Framework Health & Stats**: Rails/Ruby versions, rails_stats codebase metrics, bundle-stats dependency weight
+- **Framework Health & Stats**: Rails/Ruby versions and rails_stats (codebase metrics plus dependency weight via its bundled bundle-stats)
 - **Development Environment**: CI setup, documentation
 
 ### The HTML Report
@@ -100,8 +100,7 @@ The skill will automatically install these tools if they're not present:
 - [libyear-bundler](https://github.com/jaredbeck/libyear-bundler) - Dependency freshness calculator
 - [rubycritic](https://github.com/whitesmith/rubycritic) - Code quality reporter
 - [skunk](https://github.com/fastruby/skunk) - Technical debt calculator
-- [rails_stats](https://rubygems.org/gems/rails_stats) - Codebase statistics (used instead of `rake stats`)
-- [bundle-stats](https://rubygems.org/gems/bundler-stats) - Dependency weight (transitive dependencies per gem)
+- [rails_stats](https://rubygems.org/gems/rails_stats) - Codebase statistics (used instead of `rake stats`); it bundles [bundle-stats](https://rubygems.org/gems/bundler-stats) and reports dependency weight (transitive dependencies per gem) in the same run
 
 ### Optional: Screenshots
 

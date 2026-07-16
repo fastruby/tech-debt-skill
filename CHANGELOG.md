@@ -15,8 +15,8 @@ All notable changes to this skill are documented here. The format is based on
 - Exception tracking check (Sentry, Honeybadger, Rollbar, Bugsnag, Airbrake, etc.) and
   performance monitoring check (New Relic, Scout, Skylight, AppSignal, rack-mini-profiler);
   the absence of either is flagged as a departure from best practices.
-- `rails_stats` for codebase statistics and `bundle-stats` for dependency weight (transitive
-  dependencies per gem).
+- `rails_stats` for codebase statistics; a single call also reports dependency weight
+  (transitive dependencies per gem) via its bundled `bundle-stats`.
 - Report styled with the [FastRuby.io styleguide](https://fastruby.github.io/styleguide)
   palette and Oxygen font; mobile and tablet friendly (tables scroll on small screens).
 - A link to the open source project for every tool, both in its section and in the appendix.
