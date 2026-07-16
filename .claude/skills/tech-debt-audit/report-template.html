@@ -97,6 +97,10 @@
     border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
   }
   .score-hero .big { font-size: 3.25rem; font-weight: 700; line-height: 1; color: var(--green); }
+  /* Score color reflects severity: <50 poor, 50-74 needs work, 75+ good */
+  .score-hero .big.low { color: #ff4d4d; }
+  .score-hero .big.mid { color: var(--yellow); }
+  .score-hero .big.high { color: var(--green); }
   .score-hero .lbl { opacity: .85; font-size: 13px; margin-top: 6px; }
   .score-table { flex: 1 1 420px; }
   .bar { height: 8px; background: var(--grey-lighter); border-radius: 999px; overflow: hidden; min-width: 80px; }
@@ -155,7 +159,7 @@
       <p>{{EXECUTIVE_SUMMARY}}</p>
       <div class="score-grid">
         <div class="score-hero">
-          <div class="big">{{TOTAL_SCORE}}</div>
+          <div class="big {{SCORE_CLASS}}">{{TOTAL_SCORE}}</div>
           <div class="lbl">Health Score / 100</div>
         </div>
         <div class="score-table">

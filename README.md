@@ -19,7 +19,7 @@ This skill automates the process of running multiple code quality and security t
 
 Every run produces one self-contained `index.html` that you can open in any browser or share as a single file. It includes:
 
-- An **executive summary** at the top, synthesized from every tool's output, with a 100-point health score
+- An **executive summary** at the top, synthesized from every tool's output, with a color-coded 100-point health score (red under 50, yellow 50-74, green 75-100)
 - A **section for each tool** with the real numbers pulled from its output
 - **Visuals** — screenshots of the RubyCritic overview (churn vs. complexity) embedded as base64
 - The **top 3 recommended actions** at the end, targeting the highest-priority issues
