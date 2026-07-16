@@ -10,6 +10,11 @@ allowed-tools:
   - Bash(npx*)
   - Bash(ruby*)
   - Bash(rake*)
+  - Bash(rails-stats*)
+  - Bash(rails_stats*)
+  - Bash(bundle-stats*)
+  - Bash(bundler-stats*)
+  - Bash(grep*)
   - Bash(git*)
   - Bash(ls*)
   - Bash(cat*)
@@ -56,9 +61,8 @@ directory. All commands below run from inside the target directory.
 
 ## Pre-Audit Check
 
-Before running tools, check if the client is using SonarQube or Code Climate. If so, some
-metrics may already be tracked and running certain tools (like Skunk) may be duplicate
-effort. Note this in the report.
+Before running tools, check if the client is using SonarQube. If so, some metrics may already
+be tracked and running certain tools (like Skunk) may be duplicate effort. Note this in the report.
 
 ## Tool Installation Policy
 
@@ -238,30 +242,74 @@ skunk app lib > "$OUT/raw/skunk.txt" 2>&1
 `SkunkScore = (Code Smells + Complexity) * Coverage Penalty`. Focus on files with high
 complexity + low coverage + high churn.
 
-## Step 7: Framework Health (Rails)
+## Step 7: Framework Health & Stats (Rails)
+
+Always use **rails_stats** instead of Rails' native `rake stats` — it reports richer metrics
+(polymorphic associations, schema stats, a cleaner code-to-test ratio). Pair it with
+**bundle-stats** (the `bundler-stats` gem) to measure dependency weight: how many transitive
+dependencies each top-level gem pulls in.
 
 ```bash
 bundle show rails > "$OUT/raw/rails-version.txt" 2>&1
 ruby -v > "$OUT/raw/ruby-version.txt" 2>&1
-(bundle exec rails stats || bundle exec rake stats) > "$OUT/raw/rake-stats.txt" 2>&1
+
+# Codebase stats (app + tests)
+gem install rails_stats --no-document
+rails-stats > "$OUT/raw/rails-stats.txt" 2>&1
+
+# Dependency weight (transitive dependency counts per gem)
+gem install bundler-stats --no-document
+bundle-stats > "$OUT/raw/bundle-stats.txt" 2>&1
+
 cloc --exclude-dir=node_modules,vendor,coverage,tmp,.git . > "$OUT/raw/cloc.txt" 2>&1
 ```
-Check Rails version support/EOL, test ratio, and code distribution.
+Check Rails version support/EOL, code-to-test ratio, and the heaviest dependencies (gems with
+large transitive trees are prime candidates for removal or replacement).
 
-## Step 8: Development Environment
+## Step 8: Runtime Observability
+
+A production Rails app should be able to answer "did something break?" and "is it slow?".
+Check the Gemfile/Gemfile.lock for the presence of tooling in each category. If a category
+has **no** gem, flag it in the report as an issue and a departure from best practices.
+
+### Exception Tracking
+
+```bash
+grep -iE "sentry|rollbar|honeybadger|bugsnag|airbrake|exception_notification|appsignal" Gemfile.lock \
+  > "$OUT/raw/exception-tracking.txt" 2>&1
+```
+Look for: sentry-ruby/sentry-rails, rollbar, honeybadger, bugsnag, airbrake,
+exception_notification, or appsignal. If none is present, the app has no way to know about
+production exceptions — flag it as a high-priority gap.
+
+### Performance Monitoring
+
+```bash
+grep -iE "newrelic|scout_apm|skylight|ddtrace|datadog|appsignal|rack-mini-profiler|prosopite|bullet" Gemfile.lock \
+  > "$OUT/raw/performance-monitoring.txt" 2>&1
+```
+Look for an APM (newrelic_rpm, scout_apm, skylight, ddtrace/datadog, appsignal) and/or
+in-process tools (rack-mini-profiler, bullet, prosopite). If nothing is present, the team is
+flying blind on performance regressions — flag it as an issue.
+
+## Step 9: Development Environment
 
 Check for `bin/setup`, `docker-compose.yml`, README setup instructions, CI config
 (`.github/workflows/`, `.circleci/`), and `.env.example`.
 
 ---
 
-## Step 9: Assemble the Single HTML Report
+## Step 10: Assemble the Single HTML Report
 
 This is the primary deliverable. Read the template and produce ONE self-contained HTML file
 at `$OUT/index.html`.
 
-1. **Read the template**: `report-template.html` (next to this SKILL.md). It contains all
-   CSS inline and `{{PLACEHOLDER}}` markers.
+1. **Read the template**: `report-template.html` (next to this SKILL.md). It uses the
+   FastRuby.io styleguide (https://fastruby.github.io/styleguide) palette and the Oxygen
+   font, is mobile/tablet friendly (tables scroll horizontally on small screens), links each
+   section to the open source tool it used, and contains all CSS inline plus
+   `{{PLACEHOLDER}}` markers. Do NOT change the styling or the tool links — only fill the
+   `{{PLACEHOLDER}}` markers.
 
 2. **Score each category** using the Scoring Guidelines below, then fill the executive
    summary and health-score table. For each `{{*_PCT}}` marker, use `score / 20 * 100`
@@ -269,11 +317,24 @@ at `$OUT/index.html`.
    emit `<span class="badge pass">Pass</span>`, `warn`/`Warning`, or `fail`/`Fail`.
 
 3. **Fill each tool section** (`{{BUNDLER_AUDIT_CONTENT}}`, `{{TRIVY_CONTENT}}`,
-   `{{RUBYCRITIC_CONTENT}}`, `{{SKUNK_CONTENT}}`, etc.) with real numbers pulled from the
-   files in `$OUT/raw/`. Use HTML tables for structured data (severity counts, top-N file
-   lists) and `<pre>` blocks for short raw excerpts. When a check found nothing, write a
-   positive note like `<p class="empty">No vulnerabilities found.</p>`. Never leave a
-   `{{PLACEHOLDER}}` in the final file.
+   `{{RUBYCRITIC_CONTENT}}`, `{{SKUNK_CONTENT}}`, `{{RAILS_STATS_CONTENT}}`,
+   `{{BUNDLE_STATS_CONTENT}}`, etc.) with real numbers pulled from the files in `$OUT/raw/`.
+   Wrap every `<table>` in `<div class="table-wrap">…</div>` so it scrolls on mobile. Use
+   `<pre>` blocks for short raw excerpts. When a check found nothing, write a positive note
+   like `<p class="empty">No vulnerabilities found.</p>`. Never leave a `{{PLACEHOLDER}}` in
+   the final file.
+
+   - `{{RAILS_STATS_CONTENT}}`: a table from `rails-stats.txt` (code LOC, test LOC,
+     code-to-test ratio, polymorphic associations, schema `create_table` count).
+   - `{{BUNDLE_STATS_CONTENT}}`: the heaviest gems from `bundle-stats.txt` (top gems by total
+     transitive dependency count), with a note on removal/replacement candidates.
+   - `{{EXCEPTIONS_CONTENT}}`: if an exception-tracking gem was found (see Step 8), name it and
+     mark it `<p class="empty">…</p>`. If none, use `<p class="flag">No exception tracking gem
+     detected — the app cannot report production errors. This falls short of best practices;
+     add Sentry, Honeybadger, Rollbar, or similar.</p>`.
+   - `{{PERFORMANCE_CONTENT}}`: same pattern for performance/APM gems. If none, flag it:
+     `<p class="flag">No performance monitoring detected — regressions will go unnoticed. Add
+     an APM (New Relic, Scout, Skylight, AppSignal, Datadog) and/or rack-mini-profiler.</p>`.
 
 4. **Embed screenshots as base64 data URIs** so the report is truly a single file. For each
    screenshot:
@@ -292,9 +353,21 @@ at `$OUT/index.html`.
    actions to address the highest-priority issues found. Be specific — name the exact gem,
    CVE, or file, and say what to do. Order by impact/urgency.
 
-7. **Appendix** (`{{TOOLS_TABLE}}`): a table of every tool run with its version and purpose.
-   Use `{{APPENDIX_NOTES}}` for caveats, exclusions, false positives, or a note that
-   SonarQube/Code Climate already covers some metrics.
+7. **Appendix** (`{{TOOLS_TABLE}}`, wrapped in `<div class="table-wrap">`): a table of every
+   tool run with its purpose. Link each tool name to its open source project page, e.g.
+   `<a href="https://github.com/fastruby/skunk">skunk</a>`,
+   `<a href="https://github.com/rubysec/bundler-audit">bundler-audit</a>`,
+   `<a href="https://github.com/presidentbeef/brakeman">brakeman</a>`,
+   `<a href="https://github.com/rubymem/bundler-leak">bundler-leak</a>`,
+   `<a href="https://github.com/aquasecurity/trivy">trivy</a>`,
+   `<a href="https://github.com/fastruby/next_rails">next_rails</a>`,
+   `<a href="https://github.com/jaredbeck/libyear-bundler">libyear-bundler</a>`,
+   `<a href="https://github.com/simplecov-ruby/simplecov">simplecov</a>`,
+   `<a href="https://github.com/whitesmith/rubycritic">rubycritic</a>`,
+   `<a href="https://rubygems.org/gems/rails_stats">rails_stats</a>`,
+   `<a href="https://rubygems.org/gems/bundler-stats">bundle-stats</a>`.
+   Use `{{APPENDIX_NOTES}}` for caveats, exclusions, false positives, or a note that SonarQube
+   already covers some metrics.
 
 8. **Write the filled HTML** to `$OUT/index.html`.
 
@@ -338,8 +411,7 @@ at `$OUT/index.html`.
 
 ## Important Notes
 
-1. **Don't duplicate effort**: if SonarQube or Code Climate is in use, note which metrics
-   they already track.
+1. **Don't duplicate effort**: if SonarQube is in use, note which metrics it already tracks.
 2. **Focus on business logic**: complexity tools target `app/` and `lib/`, not tests.
 3. **Context matters**: a high SkunkScore in a rarely-changed file is less urgent than a
    moderate score in a frequently-modified file.
